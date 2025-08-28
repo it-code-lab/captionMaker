@@ -30,7 +30,6 @@
 <body>
 <header>Hindi Caption Maker — preview + export .ass (with effects)</header>
 <div class="wrap">
-  <!-- LEFT -->
   <div class="panel">
     <div class="section">
       <div class="row">
@@ -162,7 +161,6 @@
     </div>
   </div>
 
-  <!-- RIGHT -->
   <div class="preview">
     <video id="vid" controls></video>
     <div id="capOverlay"></div>
@@ -234,7 +232,7 @@ function applyPreview(){
     outer.style.color=st.color;
     outer.style.whiteSpace= st.single ? 'nowrap' : 'pre-wrap';
     outer.style.filter = `drop-shadow(0 0 ${st.shadow}px rgba(0,0,0,0.8))`;
-    outer.style.webkitTextStroke = st.outline>0? `${Math.max(1,st.outline/2)}px #000`:'';
+    outer.style.webkitTextStroke = st.outline>0? `${Math.max(1,st.outline/2)}px ${$('colorOutline').value}`:'';
 
     const inner=document.createElement('span'); inner.className='capText';
     inner.textContent = r.text.replace(/\\N/g, '\n');
@@ -253,22 +251,22 @@ function applyPreview(){
       outer.style.display = visible ? 'block':'none';
       if(!visible) return;
 
-      // base
+      // base styles
       inner.style.opacity = 1;
       inner.style.transform = 'translateY(0px)';
-      inner.style.filter = `none`;
+      inner.style.filter = `drop-shadow(0 0 ${st.shadow}px rgba(0,0,0,0.8))`;
 
       // EFFECTS
       switch(st.effect){
         case 'fade': {
           let op=1;
-          if(t<s+FADE_IN) op = Math.max(0, Math.min(1, (t-s)/FADE_IN));
-          if(t>e-FADE_OUT) op = Math.max(0, Math.min(op, (e-t)/FADE_OUT));
+          if(t<s+FADE_IN/1000) op = Math.max(0, Math.min(1, (t-s)/(FADE_IN/1000)));
+          if(t>e-FADE_OUT/1000) op = Math.max(0, Math.min(op, (e-t)/(FADE_OUT/1000)));
           inner.style.opacity = op;
           break;
         }
         case 'slideup': {
-          const p = Math.max(0, Math.min(1, (t-s)/SLIDE_MS));
+          const p = Math.max(0, Math.min(1, (t-s)/(SLIDE_MS/1000)));
           const y = (1-p)*40; // px
           const op = p;
           inner.style.transform = `translateY(${y}px)`;
@@ -276,24 +274,40 @@ function applyPreview(){
           break;
         }
         case 'glow': {
-          const p = Math.max(0, Math.min(1, (t-s)/GLOW_MS));
-          // simulate stronger outline/blur at start then settle
+          const p = Math.max(0, Math.min(1, (t-s)/(GLOW_MS/1000)));
           const blur = (1-p)*4 + 2; // px
           inner.style.filter = `drop-shadow(0 0 ${blur}px rgba(0,0,0,0.9))`;
           break;
         }
         case 'karaoke': {
-          // reveal left->right across entire line duration
-          // measure full width once (cache in dataset)
-          if(!inner.dataset.fullw){
-            inner.style.maxWidth = 'none';
-            inner.dataset.fullw = inner.scrollWidth;
+          const words = r.text.replace(/\\N/g, ' ').split(' ');
+          const wordDur = d / words.length;
+          let currentWidth = 0;
+          let revealWidth = 0;
+          
+          if (!outer.dataset.wordWidths) {
+              const span = document.createElement('span');
+              span.style.fontFamily = st.fam;
+              span.style.fontSize = st.fs + 'px';
+              span.style.position = 'absolute';
+              span.style.visibility = 'hidden';
+              document.body.appendChild(span);
+
+              const widths = words.map(word => {
+                  span.textContent = word;
+                  return span.offsetWidth;
+              });
+              outer.dataset.wordWidths = JSON.stringify(widths);
+              document.body.removeChild(span);
           }
-          const W = +inner.dataset.fullw || inner.scrollWidth;
-          const prog = d>0 ? Math.max(0, Math.min(1, (t-s)/d)) : 1;
-          inner.style.display='inline-block';
-          inner.style.overflow='hidden';
-          inner.style.maxWidth = (W*prog)+'px';
+          const wordWidths = JSON.parse(outer.dataset.wordWidths);
+          
+          for (let i = 0; i < words.length; i++) {
+              if (t >= s + i * wordDur) {
+                  currentWidth += wordWidths[i];
+              }
+          }
+          inner.style.clipPath = `polygon(0 0, ${currentWidth}px 0, ${currentWidth}px 100%, 0 100%)`;
           break;
         }
       }
@@ -306,27 +320,59 @@ function applyPreview(){
 $('previewBtn').addEventListener('click', applyPreview);
 
 function exportASS(){
-  const rows = parseLines($('lines').value);
-  if(rows.length===0){ alert('Add at least one caption line.'); return; }
+  try {
+    const rows = parseLines($('lines').value);
+    if (rows.length === 0) { alert('Add at least one caption line.'); return; }
 
-  const PlayResX=+$('resX').value||1920, PlayResY=+$('resY').value||1080;
-  const WrapStyle=+$('wrapStyle').value||2;
+    const PlayResX = +$('resX').value || 1920;
+    const PlayResY = +$('resY').value || 1080;
+    const WrapStyle = +$('wrapStyle').value || 2;
 
-  const font=$('fontFamily').value||'Noto Sans Devanagari';
-  const fontsize=+$('fontSize').value||64;
+    const font     = $('fontFamily').value || 'Noto Sans Devanagari';
+    const fontsize = +$('fontSize').value || 64;
 
-  const pri=cssHexToASS($('colorText').value, $('alphaText').value||0);
-  const out=cssHexToASS($('colorOutline').value, 0);
-  const back='&H64000000';
-  const sec='&H000000FF';
+    const pri  = cssHexToASS($('colorText').value,  $('alphaText').value || 0);
+    const out  = cssHexToASS($('colorOutline').value, 0);
+    const back = '&H64000000';
+    const sec  = '&H000000FF';
 
-  const outline=+$('outline').value||4, shadow=+$('shadow').value||3;
+    const outlinePx = +$('outline').value || 4;
+    const shadowPx  = +$('shadow').value  || 3;
 
-  const align=+$('align').value||2, mL=+$('marginL').value||80, mR=+$('marginR').value||80, mV=+$('marginV').value||60;
+    const alignVal = +$('align').value || 2;
+    const mL = +$('marginL').value || 80;
+    const mR = +$('marginR').value || 80;
+    const mV = +$('marginV').value || 60;
 
-  const single=$('singleLine').value==='1', effect=$('effect').value;
+    const single = $('singleLine').value === '1';
+    const effectSel = $('effect').value;
 
-  let header = `[Script Info]
+    function effectTag(text, duration) {
+      const base = single ? `{\\q1\\an${alignVal}}` : `{\\an${alignVal}}`;
+      
+      switch (effectSel) {
+        case 'fade':
+          return `{\\an${alignVal}\\fad(250,150)}`;
+        case 'slideup':
+          // Replicates the slide up effect with ASS move tag
+          const startY = PlayResY + 20; // Start off-screen
+          const endY = PlayResY - mV - fontsize; // End at the desired vertical position
+          const midX = PlayResX / 2;
+          return `{\\an${alignVal}\\move(${midX},${startY},${midX},${endY},0,600)}`;
+        case 'glow':
+          // Simulates a glow effect by progressively increasing border and shadow
+          return `{\\an${alignVal}\\t(0,250,\\bord${outlinePx+2}\\shad${shadowPx+2})\\t(250,600,\\bord${outlinePx}\\shad${shadowPx})}`;
+        case 'karaoke':
+          const words = text.replace(/\\N/g, ' ').split(' ');
+          const durationPerWord = (duration / words.length) * 100; // in centiseconds
+          const karaokeTaggedText = words.map(word => `{\\k${Math.round(durationPerWord)}}${word}`).join('');
+          return `{\\an${alignVal}}` + karaokeTaggedText;
+        default:
+          return base;
+      }
+    }
+
+    const header = `[Script Info]
 Title=Hindi Captions
 ScriptType=v4.00+
 PlayResX=${PlayResX}
@@ -336,31 +382,33 @@ ScaledBorderAndShadow=yes
 
 [V4+ Styles]
 ; Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},-1,0,0,0,100,100,0,0,1,${outline},${shadow},${align},${mL},${mR},${mV},1
+Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},-1,0,0,0,100,100,0,0,1,${outlinePx},${shadowPx},${alignVal},${mL},${mR},${mV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
+    
+    const events = rows.map(r => {
+        const textWithTags = (effectSel === 'karaoke' ? effectTag(r.text, r.end - r.start) : (effectTag() + r.text)).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\\N/g, '\\N');
+        return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${textWithTags}`;
+    }).join('\n');
+    
+    const ass = header + events + '\n';
 
-  const tag = (()=> {
-    const base = single ? '{\\q1' : '{';
-    if(effect==='none') return single? '{\\q1}':'';
-    if(effect==='fade') return base+'\\fad(250,150)}';
-    if(effect==='slideup') return base+'\\move(960,1100,960,980,0,600)}';
-    if(effect==='glow') return base+'\\t(0,600,\\bord8\\blur4)\\t(600,900,\\bord4\\blur2)}';
-    if(effect==='karaoke') return base+'\\k40}';
-    return '';
-  })();
-
-  const ev = rows.map(r=>{
-    const txt = (tag + r.text).replace(/\|/g,'\\|');
-    return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${txt}`;
-  }).join('\n');
-
-  const ass = header + ev + '\n';
-  const blob = new Blob([ass], {type:'text/plain;charset=utf-8'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='captions.ass'; a.click();
+    // robust download
+    const blob = new Blob([ass], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'captions.ass';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+  } catch (e) {
+    console.error(e);
+    alert('Export failed. Open DevTools (F12) → Console for details.');
+  }
 }
+
 $('exportBtn').addEventListener('click', exportASS);
 </script>
 </body>
