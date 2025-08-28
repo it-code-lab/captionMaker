@@ -324,18 +324,18 @@ $('previewBtn').addEventListener('click', applyPreview);
 
 
 function exportASS(){
-  try {
+  try{
     const rows = parseLines($('lines').value);
-    if (rows.length === 0) { alert('Add at least one caption line.'); return; }
+    if(!rows.length){ alert('Add at least one caption line.'); return; }
 
     const PlayResX = +$('resX').value || 1920;
     const PlayResY = +$('resY').value || 1080;
     const WrapStyle = +$('wrapStyle').value || 2;
 
-    const font     = $('fontFamily').value || 'Noto Sans Devanagari';
+    const font = $('fontFamily').value || 'Noto Sans Devanagari';
     const fontsize = +$('fontSize').value || 64;
 
-    const pri  = cssHexToASS($('colorText').value,  $('alphaText').value || 0);
+    const pri  = cssHexToASS($('colorText').value, $('alphaText').value || 0);
     const out  = cssHexToASS($('colorOutline').value, 0);
     const back = '&H64000000';
     const sec  = '&H000000FF';
@@ -348,43 +348,53 @@ function exportASS(){
     const mR = +$('marginR').value || 80;
     const mV = +$('marginV').value || 60;
 
-    const single = $('singleLine').value === '1';
+    const single = ($('singleLine').value === '1');
     const effectSel = $('effect').value;
 
-    // Base tag (alignment + optional single-line)
-    const baseTag = single ? `{\\q1\\an${alignVal}}` : `{\\an${alignVal}}`;
-
-    function effectTag(){
-      switch (effectSel) {
-        case 'fade':    return `${baseTag}{\\fad(250,150)}`;
-        case 'slideup': {
-          // simple slide-from-below for 600ms
-          const midX = Math.round(PlayResX/2);
-          const startY = PlayResY + 20;
-          const endY   = PlayResY - mV - fontsize;
-          return `${baseTag}{\\move(${midX},${startY},${midX},${endY},0,600)}`;
-        }
-        case 'glow':    return `${baseTag}{\\t(0,600,\\bord${outlinePx+2}\\shad${shadowPx+2})\\t(600,900,\\bord${outlinePx}\\shad${shadowPx})}`;
-        case 'none':
-        default:        return baseTag;
+    // anchor from alignment + margins
+    function anchorXY(a){
+      switch(a){
+        case 1: return {x:mL,               y:PlayResY - mV};      // Left-Bottom
+        case 2: return {x:PlayResX/2,       y:PlayResY - mV};      // Center-Bottom
+        case 3: return {x:PlayResX - mR,    y:PlayResY - mV};      // Right-Bottom
+        case 4: return {x:mL,               y:PlayResY/2};         // Left-Middle
+        case 5: return {x:PlayResX/2,       y:PlayResY/2};         // Center-Middle
+        case 6: return {x:PlayResX - mR,    y:PlayResY/2};         // Right-Middle
+        case 7: return {x:mL,               y:mV};                 // Left-Top
+        case 8: return {x:PlayResX/2,       y:mV};                 // Center-Top
+        case 9: return {x:PlayResX - mR,    y:mV};                 // Right-Top
+        default:return {x:PlayResX/2,       y:PlayResY - mV};
       }
     }
 
-    function karaokeText(text, durSec){
-      // split on spaces (keep \N as real line breaks in final)
-      const w = text.replace(/\\N/g,' ').trim().split(/\s+/).filter(Boolean);
+    // compose a single override block with an+q1 and (optional) effect
+    function effectTag(a){
+      const {x,y} = anchorXY(a);
+      const base = single ? `{\\q1\\an${a}` : `{\\an${a}`;
+      if(effectSel === 'fade')     return `${base}\\fad(250,150)}`;
+      if(effectSel === 'glow')     return `${base}\\t(0,600,\\bord${outlinePx+2}\\shad${shadowPx+2})\\t(600,900,\\bord${outlinePx}\\shad${shadowPx})}`;
+      if(effectSel === 'slideup'){ // vertical move into place
+        const offset = (a===7||a===8||a===9) ? -120 : 120; // if top, slide down; else slide up
+        return `${base}\\move(${Math.round(x)},${Math.round(y+offset)},${Math.round(x)},${Math.round(y)},0,600)}`;
+      }
+      return `${base}}`; // none
+    }
+
+    function karaokeText(a, text, durSec){
+      const base = single ? `{\\q1\\an${a}}` : `{\\an${a}}`;
+      const words = text.replace(/\\N/g,' ').trim().split(/\s+/).filter(Boolean);
       const totalCs = Math.max(1, Math.round(durSec*100));
-      const per = Math.max(1, Math.round(totalCs / Math.max(1,w.length)));
-      return baseTag + w.map(word => `{\\k${per}}${word}`).join(' ');
+      const per = Math.max(1, Math.round(totalCs / Math.max(1, words.length)));
+      return base + words.map(w => `{\\k${per}}${w}`).join(' ');
     }
 
     const header = `[Script Info]
-Title=Hindi Captions
-ScriptType=v4.00+
-PlayResX=${PlayResX}
-PlayResY=${PlayResY}
-WrapStyle=${WrapStyle}
-ScaledBorderAndShadow=yes
+Title: Hindi Captions
+ScriptType: v4.00+
+PlayResX: ${PlayResX}
+PlayResY: ${PlayResY}
+WrapStyle: ${WrapStyle}
+ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 ; Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
@@ -394,12 +404,12 @@ Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},-1,0,0,0,100,
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
 
-    const events = rows.map(r => {
-      const dur = (r.end - r.start);
-      const text = r.text; // keep \N as-is for multiline
+    const events = rows.map(r=>{
+      const dur = r.end - r.start;
+      const text = r.text; // keep \N as real line breaks
       const payload = (effectSel === 'karaoke')
-        ? karaokeText(text, dur)
-        : effectTag() + text;
+        ? karaokeText(alignVal, text, dur)
+        : effectTag(alignVal) + text;
       return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${payload}`;
     }).join('\n');
 
@@ -412,11 +422,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 200);
-  } catch (e) {
-    console.error(e);
-    alert('Export failed. Open DevTools (F12) → Console for details.');
-  }
+  }catch(e){ console.error(e); alert('Export failed. See console.'); }
 }
+
+
+
 $('exportBtn').addEventListener('click', exportASS);
 </script>
 
