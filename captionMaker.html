@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Hindi Caption Maker (.ass)</title>
+<title>Hindi Caption Maker (.ass) — with Effect Preview</title>
 <style>
-  :root { --bg:#0f172a; --card:#111827; --muted:#334155; --text:#e5e7eb; }
+  :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb }
   *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Inter,"Noto Sans Devanagari",sans-serif}
   body{margin:0;background:var(--bg);color:var(--text)}
   header{padding:12px 16px;border-bottom:1px solid #1f2937;font-weight:600}
@@ -15,139 +15,135 @@
   .row{display:grid;grid-template-columns: 1fr 1fr; gap:8px}
   label{font-size:12px;color:#cbd5e1}
   input,select,textarea{width:100%;padding:8px;border:1px solid #374151;border-radius:8px;background:#0b1220;color:#e5e7eb}
-  textarea{min-height:120px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  textarea{min-height:120px;font-family:ui-monospace,Menlo,monospace}
   button{background:#2563eb;border:none;color:white;padding:10px 12px;border-radius:10px;cursor:pointer}
   button.secondary{background:#374151}
   .preview{position:relative;background:#000;height:100%;display:flex;align-items:center;justify-content:center}
   video{max-width:100%;max-height:100%}
   #capOverlay{position:absolute;inset:0;pointer-events:none}
-  .capLine{position:absolute;white-space:pre-wrap;text-align:center;filter: drop-shadow(0 0 2px rgba(0,0,0,.7));}
-  .grid{display:grid;gap:8px}
+  .capLine{position:absolute;white-space:pre-wrap;text-align:center}
+  .capText{display:inline-block; will-change: transform, opacity, filter, clip-path, max-width}
   .tiny{font-size:11px;color:#94a3b8}
   .kbd{font-family:ui-monospace,monospace;background:#0b1220;border:1px solid #334155;border-radius:6px;padding:2px 6px}
-  .table{width:100%;border-collapse:collapse;font-size:13px}
-  .table th,.table td{border-bottom:1px solid #1f2937;padding:6px}
 </style>
 </head>
 <body>
-<header>Hindi Caption Maker — preview + export .ass</header>
+<header>Hindi Caption Maker — preview + export .ass (with effects)</header>
 <div class="wrap">
-  <!-- LEFT CONTROL PANEL -->
+  <!-- LEFT -->
   <div class="panel">
     <div class="section">
-      <div class="grid">
-        <div class="row">
-          <div>
-            <label>Load video (for preview)</label>
-            <input type="file" id="videoFile" accept="video/*">
-          </div>
-          <div>
-            <label>Resolution for .ass (PlayResX × PlayResY)</label>
-            <div class="row">
-              <input id="resX" type="number" value="1920" min="320">
-              <input id="resY" type="number" value="1080" min="240">
-            </div>
+      <div class="row">
+        <div>
+          <label>Load video (for preview)</label>
+          <input type="file" id="videoFile" accept="video/*">
+        </div>
+        <div>
+          <label>Resolution (PlayResX × PlayResY)</label>
+          <div class="row">
+            <input id="resX" type="number" value="1920" min="320">
+            <input id="resY" type="number" value="1080" min="240">
           </div>
         </div>
+      </div>
 
-        <div class="row">
-          <div>
-            <label>Font family (installed or type name)</label>
-            <input id="fontFamily" value="Noto Sans Devanagari">
-          </div>
-          <div>
-            <label>Font size</label>
-            <input id="fontSize" type="number" value="64" min="8">
+      <div class="row">
+        <div>
+          <label>Font family</label>
+          <input id="fontFamily" value="Noto Sans Devanagari">
+        </div>
+        <div>
+          <label>Font size</label>
+          <input id="fontSize" type="number" value="64" min="8">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Text color</label>
+          <input id="colorText" type="color" value="#ffff00">
+        </div>
+        <div>
+          <label>Opacity (0=solid, 255=transparent)</label>
+          <input id="alphaText" type="number" value="0" min="0" max="255">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Outline color</label>
+          <input id="colorOutline" type="color" value="#000000">
+        </div>
+        <div>
+          <label>Outline thickness</label>
+          <input id="outline" type="number" value="4" min="0" step="1">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Shadow</label>
+          <input id="shadow" type="number" value="3" min="0" step="1">
+        </div>
+        <div>
+          <label>Wrap style</label>
+          <select id="wrapStyle">
+            <option value="2" selected>Smart (2)</option>
+            <option value="1">No word wrap (1)</option>
+            <option value="3">Smart wider last line (3)</option>
+            <option value="0">EOL only (0)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Position preset</label>
+          <select id="align">
+            <option value="2" selected>Center Bottom (2)</option>
+            <option value="8">Center Top (8)</option>
+            <option value="5">Center Middle (5)</option>
+            <option value="1">Left Bottom (1)</option>
+            <option value="3">Right Bottom (3)</option>
+            <option value="4">Left Middle (4)</option>
+            <option value="6">Right Middle (6)</option>
+            <option value="7">Left Top (7)</option>
+            <option value="9">Right Top (9)</option>
+          </select>
+        </div>
+        <div>
+          <label>Margins (L / R / V px)</label>
+          <div class="row">
+            <input id="marginL" type="number" value="80" min="0">
+            <input id="marginR" type="number" value="80" min="0">
+            <input id="marginV" type="number" value="60" min="0">
           </div>
         </div>
+      </div>
 
-        <div class="row">
-          <div>
-            <label>Text color</label>
-            <input id="colorText" type="color" value="#ffff00">
-          </div>
-          <div>
-            <label>Opacity (0=solid, 255=transparent)</label>
-            <input id="alphaText" type="number" value="0" min="0" max="255">
-          </div>
+      <div class="row">
+        <div>
+          <label>Disable wrapping (single line)</label>
+          <select id="singleLine">
+            <option value="0" selected>No</option>
+            <option value="1">Yes ({\q1})</option>
+          </select>
         </div>
-
-        <div class="row">
-          <div>
-            <label>Outline color</label>
-            <input id="colorOutline" type="color" value="#000000">
-          </div>
-          <div>
-            <label>Outline thickness</label>
-            <input id="outline" type="number" value="4" min="0" step="1">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Shadow</label>
-            <input id="shadow" type="number" value="3" min="0" step="1">
-          </div>
-          <div>
-            <label>Wrap style</label>
-            <select id="wrapStyle">
-              <option value="2" selected>Smart (WrapStyle=2)</option>
-              <option value="1">No word wrap (1)</option>
-              <option value="3">Smart w/ wider last line (3)</option>
-              <option value="0">End-of-line only (0)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Position preset</label>
-            <select id="align">
-              <option value="2" selected>Center Bottom (2)</option>
-              <option value="8">Center Top (8)</option>
-              <option value="5">Center Middle (5)</option>
-              <option value="1">Left Bottom (1)</option>
-              <option value="3">Right Bottom (3)</option>
-              <option value="4">Left Middle (4)</option>
-              <option value="6">Right Middle (6)</option>
-              <option value="7">Left Top (7)</option>
-              <option value="9">Right Top (9)</option>
-            </select>
-          </div>
-          <div>
-            <label>Margins (L / R / V px)</label>
-            <div class="row">
-              <input id="marginL" type="number" value="80" min="0">
-              <input id="marginR" type="number" value="80" min="0">
-              <input id="marginV" type="number" value="60" min="0">
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Disable wrapping (force single line)</label>
-            <select id="singleLine">
-              <option value="0" selected>No</option>
-              <option value="1">Yes ({\q1})</option>
-            </select>
-          </div>
-          <div>
-            <label>Reveal effect</label>
-            <select id="effect">
-              <option value="none" selected>None</option>
-              <option value="fade">Fade (\fad 250,150)</option>
-              <option value="slideup">Slide Up (\move)</option>
-              <option value="glow">Soft Glow Transform (\t)</option>
-              <option value="karaoke">Simple Karaoke (\k40)</option>
-            </select>
-          </div>
+        <div>
+          <label>Reveal effect</label>
+          <select id="effect">
+            <option value="none" selected>None</option>
+            <option value="fade">Fade (250ms in / 150ms out)</option>
+            <option value="slideup">Slide Up (600ms)</option>
+            <option value="glow">Soft Glow (600ms)</option>
+            <option value="karaoke">Karaoke (line duration)</option>
+          </select>
         </div>
       </div>
     </div>
 
     <div class="section">
-      <label>Captions (one per line): <span class="tiny">Format: <span class="kbd">HH:MM:SS.mmm → HH:MM:SS.mmm | Your Hindi text (use \N for line breaks)</span></span></label>
+      <label>Captions (one per line): <span class="tiny">Format: <span class="kbd">HH:MM:SS.mmm → HH:MM:SS.mmm | Your Hindi text (\N for line breaks)</span></span></label>
       <textarea id="lines" placeholder="00:00:01.000 → 00:00:05.000 | ॐ गं गणपतये नमः ॥&#10;00:00:06.000 → 00:00:10.000 | वक्रतुंड महाकाय \N सूर्यकोटि समप्रभ"></textarea>
       <div class="row" style="margin-top:8px">
         <button id="previewBtn">Preview</button>
@@ -158,15 +154,15 @@
     <div class="section">
       <b>Tips</b>
       <ul class="tiny">
-        <li>Use <span class="kbd">\N</span> to force a new line in a caption.</li>
-        <li>“Single line” adds <span class="kbd">{\q1}</span> to disable wrapping.</li>
-        <li>For exact pixel placement, put <span class="kbd">{\pos(x,y)}</span> at the start of the text.</li>
-        <li>Burn: <span class="kbd">ffmpeg -i input.mp4 -vf "ass=yourfile.ass" -c:a copy out.mp4</span></li>
+        <li>Use <span class="kbd">\N</span> for manual line breaks.</li>
+        <li>“Single line” adds <span class="kbd">{\q1}</span> on export and uses <i>nowrap</i> in preview.</li>
+        <li>Exact pixel placement: put <span class="kbd">{\pos(x,y)}</span> at start of text (applies in export).</li>
+        <li>Burn: <span class="kbd">ffmpeg -i input.mp4 -vf "ass=captions.ass" -c:a copy out.mp4</span></li>
       </ul>
     </div>
   </div>
 
-  <!-- RIGHT PREVIEW -->
+  <!-- RIGHT -->
   <div class="preview">
     <video id="vid" controls></video>
     <div id="capOverlay"></div>
@@ -174,148 +170,161 @@
 </div>
 
 <script>
-/* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
-const hhmmToSec = s => {
-  // "HH:MM:SS.mmm"
-  const m = s.trim().match(/^(\d{2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?$/);
-  if (!m) return null;
-  const [_,H,M,S,ms='0'] = m;
-  return (+H)*3600 + (+M)*60 + (+S) + (+ms)/1000;
-};
-const secToAss = t => {
-  // ASS time "H:MM:SS.cs" (centiseconds)
-  const cs = Math.round(t*100);
-  const H = Math.floor(cs/360000);
-  const M = Math.floor((cs%360000)/6000);
-  const S = Math.floor((cs%6000)/100);
-  const C = cs%100;
-  return `${H}:${String(M).padStart(2,'0')}:${String(S).padStart(2,'0')}.${String(C).padStart(2,'0')}`;
-};
-const cssHexToASS = (hex, alpha=0) => {
-  // hex "#RRGGBB" -> &HAA BB GG RR
-  const h = hex.replace('#','');
-  const r = h.substring(0,2), g = h.substring(2,4), b = h.substring(4,6);
-  const AA = Number(alpha).toString(16).toUpperCase().padStart(2,'0');
-  return `&H${AA}${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}`;
-};
+const hhmmToSec = s => { const m=s.trim().match(/^(\d{2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?$/); if(!m) return null; const [_,H,M,S,ms='0']=m; return (+H)*3600+(+M)*60+(+S)+(+ms)/1000; };
+const secToAss = t => { const cs=Math.round(t*100); const H=Math.floor(cs/360000); const M=Math.floor((cs%360000)/6000); const S=Math.floor((cs%6000)/100); const C=cs%100; return `${H}:${String(M).padStart(2,'0')}:${String(S).padStart(2,'0')}.${String(C).padStart(2,'0')}`; };
+const cssHexToASS = (hex, alpha=0) => { const h=hex.replace('#',''); const r=h.slice(0,2),g=h.slice(2,4),b=h.slice(4,6); const AA=Number(alpha).toString(16).toUpperCase().padStart(2,'0'); return `&H${AA}${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}`; };
 function parseLines(raw){
-  // Format: "start → end | text"
-  const rows = [];
-  raw.split(/\r?\n/).forEach(line=>{
+  const rows=[]; raw.split(/\r?\n/).forEach(line=>{
     if(!line.trim()) return;
-    const m = line.split('|');
-    if(m.length<2) return;
-    const times = m[0].split('→');
-    if(times.length<2) return;
-    const start = hhmmToSec(times[0].trim());
-    const end = hhmmToSec(times[1].trim());
-    const text = m.slice(1).join('|').trim();
-    if(start==null || end==null || !text) return;
+    const m=line.split('|'); if(m.length<2) return;
+    const times=m[0].split('→'); if(times.length<2) return;
+    const start=hhmmToSec(times[0].trim()), end=hhmmToSec(times[1].trim());
+    const text=m.slice(1).join('|').trim(); if(start==null||end==null||!text) return;
     rows.push({start,end,text});
-  });
-  return rows;
+  }); return rows;
 }
-/* ---------- video load ---------- */
+
 $('videoFile').addEventListener('change', e=>{
-  const f = e.target.files?.[0]; if(!f) return;
-  const url = URL.createObjectURL(f);
-  $('vid').src = url;
+  const f=e.target.files?.[0]; if(!f) return;
+  $('vid').src = URL.createObjectURL(f);
 });
-/* ---------- preview ---------- */
-function styleForPreview(){
-  const fs = +$('fontSize').value || 64;
-  const color = $('colorText').value;
-  const stroke = +$('outline').value || 0;
-  const shadow = +$('shadow').value || 0;
-  const fam = $('fontFamily').value;
-  return {fs,color,stroke,shadow,fam};
+
+function currentStyle(){
+  return {
+    fam: $('fontFamily').value,
+    fs: +$('fontSize').value||64,
+    color: $('colorText').value,
+    outline: +$('outline').value||0,
+    shadow: +$('shadow').value||0,
+    align: +$('align').value||2,
+    mL: +$('marginL').value||0,
+    mR: +$('marginR').value||0,
+    mV: +$('marginV').value||0,
+    single: $('singleLine').value==='1',
+    effect: $('effect').value
+  };
 }
-function positionForPreview(){
-  const a = +$('align').value;
-  const mL= +$('marginL').value||0, mR=+$('marginR').value||0, mV=+$('marginV').value||0;
-  return {a,mL,mR,mV};
+
+function place(el, align, mL, mR, mV){
+  // Map ASS alignment to CSS position
+  const map = {
+    1:{x:'left',y:'bottom'},2:{x:'center',y:'bottom'},3:{x:'right',y:'bottom'},
+    4:{x:'left',y:'middle'},5:{x:'center',y:'middle'},6:{x:'right',y:'middle'},
+    7:{x:'left',y:'top'},   8:{x:'center',y:'top'},   9:{x:'right',y:'top'}
+  }[align];
+  if(map.x==='left'){ el.style.left = mL+'px'; el.style.right='auto'; el.style.transform='translateX(0)'; el.style.textAlign='left'; }
+  if(map.x==='center'){ el.style.left = '50%'; el.style.right='auto'; el.style.transform='translateX(-50%)'; el.style.textAlign='center'; }
+  if(map.x==='right'){ el.style.right = mR+'px'; el.style.left='auto'; el.style.transform='translateX(0)'; el.style.textAlign='right'; }
+  if(map.y==='top'){ el.style.top = mV+'px'; el.style.bottom='auto'; }
+  if(map.y==='middle'){ el.style.top='50%'; el.style.bottom='auto'; el.style.transform += ' translateY(-50%)'; }
+  if(map.y==='bottom'){ el.style.bottom = mV+'px'; el.style.top='auto'; }
 }
+
 function applyPreview(){
-  const rows = parseLines($('lines').value);
-  const ov = $('capOverlay');
-  ov.innerHTML = '';
-  const {fs,color,stroke,shadow,fam} = styleForPreview();
-  const {a,mL,mR,mV} = positionForPreview();
-  const v = $('vid');
-  const W = v.videoWidth || 1920, H = v.videoHeight || 1080;
+  const rows=parseLines($('lines').value);
+  const ov=$('capOverlay'); ov.innerHTML='';
+  const st=currentStyle();
 
-  function place(el){
-    el.style.fontSize = fs+'px';
-    el.style.fontFamily = fam;
-    el.style.color = color;
-    el.style.textShadow = `0 0 ${shadow}px rgba(0,0,0,0.8)`;
-    el.style.webkitTextStroke = stroke>0? `${Math.max(1,stroke/2)}px #000`:'';
-    // alignment map
-    const map = {
-      1:{x:'left',y:'bottom'},2:{x:'center',y:'bottom'},3:{x:'right',y:'bottom'},
-      4:{x:'left',y:'middle'},5:{x:'center',y:'middle'},6:{x:'right',y:'middle'},
-      7:{x:'left',y:'top'},   8:{x:'center',y:'top'},   9:{x:'right',y:'top'}
-    }[a];
-    // x
-    if(map.x==='left'){ el.style.left = mL+'px'; el.style.transform='translateX(0)'; el.style.textAlign='left'; }
-    if(map.x==='center'){ el.style.left = '50%'; el.style.transform='translateX(-50%)'; el.style.textAlign='center'; }
-    if(map.x==='right'){ el.style.right = mR+'px'; el.style.left='auto'; el.style.transform='translateX(0)'; el.style.textAlign='right'; }
-    // y
-    if(map.y==='top'){ el.style.top = mV+'px'; }
-    if(map.y==='middle'){ el.style.top='50%'; el.style.transform += ' translateY(-50%)'; }
-    if(map.y==='bottom'){ el.style.bottom = mV+'px'; }
-  }
+  rows.forEach(r=>{
+    const outer=document.createElement('div'); outer.className='capLine';
+    place(outer, st.align, st.mL, st.mR, st.mV);
+    outer.dataset.start=r.start; outer.dataset.end=r.end;
+    outer.style.fontFamily=st.fam; outer.style.fontSize=st.fs+'px';
+    outer.style.color=st.color;
+    outer.style.whiteSpace= st.single ? 'nowrap' : 'pre-wrap';
+    outer.style.filter = `drop-shadow(0 0 ${st.shadow}px rgba(0,0,0,0.8))`;
+    outer.style.webkitTextStroke = st.outline>0? `${Math.max(1,st.outline/2)}px #000`:'';
 
-  // one overlay element reused, we swap content by time
-  rows.forEach((r,i)=>{
-    const div = document.createElement('div');
-    div.className='capLine';
-    div.dataset.start = r.start;
-    div.dataset.end = r.end;
-    div.textContent = r.text.replace(/\\N/g, '\n');
-    place(div);
-    ov.appendChild(div);
+    const inner=document.createElement('span'); inner.className='capText';
+    inner.textContent = r.text.replace(/\\N/g, '\n');
+    outer.appendChild(inner);
+    ov.appendChild(outer);
   });
+
+  const FADE_IN=250, FADE_OUT=150, SLIDE_MS=600, GLOW_MS=600;
 
   function tick(){
-    const t = $('vid').currentTime || 0;
-    [...ov.children].forEach(el=>{
-      const s=+el.dataset.start, e=+el.dataset.end;
-      el.style.display = (t>=s && t<=e) ? 'block':'none';
+    const t=$('vid').currentTime||0;
+    [...ov.children].forEach(outer=>{
+      const s=+outer.dataset.start, e=+outer.dataset.end, d=(e-s);
+      const inner=outer.firstChild;
+      const visible = t>=s && t<=e;
+      outer.style.display = visible ? 'block':'none';
+      if(!visible) return;
+
+      // base
+      inner.style.opacity = 1;
+      inner.style.transform = 'translateY(0px)';
+      inner.style.filter = `none`;
+
+      // EFFECTS
+      switch(st.effect){
+        case 'fade': {
+          let op=1;
+          if(t<s+FADE_IN) op = Math.max(0, Math.min(1, (t-s)/FADE_IN));
+          if(t>e-FADE_OUT) op = Math.max(0, Math.min(op, (e-t)/FADE_OUT));
+          inner.style.opacity = op;
+          break;
+        }
+        case 'slideup': {
+          const p = Math.max(0, Math.min(1, (t-s)/SLIDE_MS));
+          const y = (1-p)*40; // px
+          const op = p;
+          inner.style.transform = `translateY(${y}px)`;
+          inner.style.opacity = op;
+          break;
+        }
+        case 'glow': {
+          const p = Math.max(0, Math.min(1, (t-s)/GLOW_MS));
+          // simulate stronger outline/blur at start then settle
+          const blur = (1-p)*4 + 2; // px
+          inner.style.filter = `drop-shadow(0 0 ${blur}px rgba(0,0,0,0.9))`;
+          break;
+        }
+        case 'karaoke': {
+          // reveal left->right across entire line duration
+          // measure full width once (cache in dataset)
+          if(!inner.dataset.fullw){
+            inner.style.maxWidth = 'none';
+            inner.dataset.fullw = inner.scrollWidth;
+          }
+          const W = +inner.dataset.fullw || inner.scrollWidth;
+          const prog = d>0 ? Math.max(0, Math.min(1, (t-s)/d)) : 1;
+          inner.style.display='inline-block';
+          inner.style.overflow='hidden';
+          inner.style.maxWidth = (W*prog)+'px';
+          break;
+        }
+      }
     });
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
+
 $('previewBtn').addEventListener('click', applyPreview);
 
-/* ---------- export ASS ---------- */
 function exportASS(){
   const rows = parseLines($('lines').value);
   if(rows.length===0){ alert('Add at least one caption line.'); return; }
 
-  const PlayResX = +$('resX').value||1920, PlayResY=+$('resY').value||1080;
-  const WrapStyle = +$('wrapStyle').value||2;
+  const PlayResX=+$('resX').value||1920, PlayResY=+$('resY').value||1080;
+  const WrapStyle=+$('wrapStyle').value||2;
 
-  const font = $('fontFamily').value || 'Noto Sans Devanagari';
-  const fontsize = +$('fontSize').value||64;
+  const font=$('fontFamily').value||'Noto Sans Devanagari';
+  const fontsize=+$('fontSize').value||64;
 
-  const pri = cssHexToASS($('colorText').value, $('alphaText').value||0);
-  const out = cssHexToASS($('colorOutline').value, 0);
-  const back = '&H64000000'; // semi black box if ever used
-  const sec = '&H000000FF';
+  const pri=cssHexToASS($('colorText').value, $('alphaText').value||0);
+  const out=cssHexToASS($('colorOutline').value, 0);
+  const back='&H64000000';
+  const sec='&H000000FF';
 
-  const outline = +$('outline').value||4;
-  const shadow = +$('shadow').value||3;
+  const outline=+$('outline').value||4, shadow=+$('shadow').value||3;
 
-  const align = +$('align').value||2;
-  const mL = +$('marginL').value||80;
-  const mR = +$('marginR').value||80;
-  const mV = +$('marginV').value||60;
+  const align=+$('align').value||2, mL=+$('marginL').value||80, mR=+$('marginR').value||80, mV=+$('marginV').value||60;
 
-  const single = $('singleLine').value==='1';
-  const effect = $('effect').value;
+  const single=$('singleLine').value==='1', effect=$('effect').value;
 
   let header = `[Script Info]
 Title=Hindi Captions
@@ -334,25 +343,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
 
   const tag = (()=> {
+    const base = single ? '{\\q1' : '{';
     if(effect==='none') return single? '{\\q1}':'';
-    if(effect==='fade') return (single? '{\\q1\\fad(250,150)}':'{\\fad(250,150)}');
-    if(effect==='slideup') return (single? '{\\q1\\move(960,1100,960,980,0,600)}':'{\\move(960,1100,960,980,0,600)}');
-    if(effect==='glow') return (single? '{\\q1\\t(0,600,\\bord8\\blur4)\\t(600,900,\\bord4\\blur2)}':'{\\t(0,600,\\bord8\\blur4)\\t(600,900,\\bord4\\blur2)}');
-    if(effect==='karaoke') return (single? '{\\q1\\k40}':'{\\k40}');
+    if(effect==='fade') return base+'\\fad(250,150)}';
+    if(effect==='slideup') return base+'\\move(960,1100,960,980,0,600)}';
+    if(effect==='glow') return base+'\\t(0,600,\\bord8\\blur4)\\t(600,900,\\bord4\\blur2)}';
+    if(effect==='karaoke') return base+'\\k40}';
     return '';
   })();
 
   const ev = rows.map(r=>{
-    const txt = (tag + r.text).replace(/\|/g,'\\|'); // escape pipes
+    const txt = (tag + r.text).replace(/\|/g,'\\|');
     return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${txt}`;
   }).join('\n');
 
   const ass = header + ev + '\n';
   const blob = new Blob([ass], {type:'text/plain;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'captions.ass';
-  a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='captions.ass'; a.click();
 }
 $('exportBtn').addEventListener('click', exportASS);
 </script>
