@@ -319,6 +319,10 @@ function applyPreview(){
 
 $('previewBtn').addEventListener('click', applyPreview);
 
+
+
+
+
 function exportASS(){
   try {
     const rows = parseLines($('lines').value);
@@ -347,29 +351,31 @@ function exportASS(){
     const single = $('singleLine').value === '1';
     const effectSel = $('effect').value;
 
-    function effectTag(text, duration) {
-      const base = single ? `{\\q1\\an${alignVal}}` : `{\\an${alignVal}}`;
-      
+    // Base tag (alignment + optional single-line)
+    const baseTag = single ? `{\\q1\\an${alignVal}}` : `{\\an${alignVal}}`;
+
+    function effectTag(){
       switch (effectSel) {
-        case 'fade':
-          return `{\\an${alignVal}\\fad(250,150)}`;
-        case 'slideup':
-          // Replicates the slide up effect with ASS move tag
-          const startY = PlayResY + 20; // Start off-screen
-          const endY = PlayResY - mV - fontsize; // End at the desired vertical position
-          const midX = PlayResX / 2;
-          return `{\\an${alignVal}\\move(${midX},${startY},${midX},${endY},0,600)}`;
-        case 'glow':
-          // Simulates a glow effect by progressively increasing border and shadow
-          return `{\\an${alignVal}\\t(0,250,\\bord${outlinePx+2}\\shad${shadowPx+2})\\t(250,600,\\bord${outlinePx}\\shad${shadowPx})}`;
-        case 'karaoke':
-          const words = text.replace(/\\N/g, ' ').split(' ');
-          const durationPerWord = (duration / words.length) * 100; // in centiseconds
-          const karaokeTaggedText = words.map(word => `{\\k${Math.round(durationPerWord)}}${word}`).join('');
-          return `{\\an${alignVal}}` + karaokeTaggedText;
-        default:
-          return base;
+        case 'fade':    return `${baseTag}{\\fad(250,150)}`;
+        case 'slideup': {
+          // simple slide-from-below for 600ms
+          const midX = Math.round(PlayResX/2);
+          const startY = PlayResY + 20;
+          const endY   = PlayResY - mV - fontsize;
+          return `${baseTag}{\\move(${midX},${startY},${midX},${endY},0,600)}`;
+        }
+        case 'glow':    return `${baseTag}{\\t(0,600,\\bord${outlinePx+2}\\shad${shadowPx+2})\\t(600,900,\\bord${outlinePx}\\shad${shadowPx})}`;
+        case 'none':
+        default:        return baseTag;
       }
+    }
+
+    function karaokeText(text, durSec){
+      // split on spaces (keep \N as real line breaks in final)
+      const w = text.replace(/\\N/g,' ').trim().split(/\s+/).filter(Boolean);
+      const totalCs = Math.max(1, Math.round(durSec*100));
+      const per = Math.max(1, Math.round(totalCs / Math.max(1,w.length)));
+      return baseTag + w.map(word => `{\\k${per}}${word}`).join(' ');
     }
 
     const header = `[Script Info]
@@ -387,29 +393,32 @@ Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},-1,0,0,0,100,
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
-    
+
     const events = rows.map(r => {
-        const textWithTags = (effectSel === 'karaoke' ? effectTag(r.text, r.end - r.start) : (effectTag() + r.text)).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\\N/g, '\\N');
-        return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${textWithTags}`;
+      const dur = (r.end - r.start);
+      const text = r.text; // keep \N as-is for multiline
+      const payload = (effectSel === 'karaoke')
+        ? karaokeText(text, dur)
+        : effectTag() + text;
+      return `Dialogue: 0,${secToAss(r.start)},${secToAss(r.end)},HindiStyle,,0,0,0,,${payload}`;
     }).join('\n');
-    
+
     const ass = header + events + '\n';
 
-    // robust download
     const blob = new Blob([ass], {type:'text/plain;charset=utf-8'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'captions.ass';
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 200);
   } catch (e) {
     console.error(e);
     alert('Export failed. Open DevTools (F12) → Console for details.');
   }
 }
-
 $('exportBtn').addEventListener('click', exportASS);
 </script>
+
 </body>
 </html>
