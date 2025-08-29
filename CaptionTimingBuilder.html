@@ -9,9 +9,9 @@
   *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Inter,"Noto Sans Devanagari",sans-serif}
   body{margin:0;background:var(--bg);color:var(--text)}
   header{padding:12px 16px;border-bottom:1px solid #1f2937;font-weight:600}
-  .wrap{display:grid;grid-template-columns: 1fr 480px; gap:0; height:calc(100vh - 52px)}
-  .left{padding:14px}
-  .right{padding:14px;background:var(--card);overflow:auto;border-left:1px solid #1f2937}
+  .wrap{display:inline-grid;grid-template-columns: 1fr 480px; gap:0; height:calc(100vh - 52px)}
+  .left{padding:14px; width: 400px;}
+  .right{padding:14px;background:var(--card);overflow:auto;border-left:1px solid #1f2937; width: max-content;}
   .section{border:1px solid #1f2937;border-radius:12px;padding:12px;margin-bottom:12px}
   label{font-size:12px;color:#cbd5e1}
   input,select,textarea,button{border-radius:10px;border:1px solid #374151;background:#0b1220;color:#e5e7eb}
@@ -314,6 +314,68 @@ document.addEventListener('keydown', (e)=>{
   if (e.key === ','){ e.preventDefault(); vid.currentTime = Math.max(0, (vid.currentTime||0)-0.5); }
   if (e.key === '.'){ e.preventDefault(); vid.currentTime = Math.min(vid.duration||1e9, (vid.currentTime||0)+0.5); }
 });
+
+// ---- playback rate helpers ----
+const RATE_LIST = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+let heldRatePrev = null;         // for "hold-to-slow" key
+
+function setRate(r){
+  // clamp to nearest value from RATE_LIST
+  let best = RATE_LIST[0], diff = Infinity;
+  RATE_LIST.forEach(v => { const d = Math.abs(v-r); if (d < diff){ diff=d; best=v; } });
+  vid.playbackRate = best;
+  $('rate').value = String(best);
+  $('rateNow').textContent = '×' + best.toFixed(2);
+  // (optional) try to keep pitch natural where supported
+  try { vid.preservesPitch = true; vid.mozPreservesPitch = true; vid.webkitPreservesPitch = true; } catch {}
+}
+
+// init & UI change
+$('rate').addEventListener('change', e => setRate(parseFloat(e.target.value)));
+setRate(1);
+
+// keyboard: [ slower, ] faster, number keys set preset, hold H = half-speed while held
+document.addEventListener('keydown', e=>{
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+
+  if (e.key === '['){ // slower
+    const i = RATE_LIST.indexOf(vid.playbackRate);
+    setRate(RATE_LIST[Math.max(0, i-1)]);
+  }
+  if (e.key === ']'){ // faster
+    const i = RATE_LIST.indexOf(vid.playbackRate);
+    setRate(RATE_LIST[Math.min(RATE_LIST.length-1, i+1)]);
+  }
+  if (/^[1-7]$/.test(e.key)){ // 1..7 map to list
+    setRate(RATE_LIST[Number(e.key)-1]);
+  }
+  // hold-to-slow (H): while pressed, drop to 0.5×
+  if (e.key.toLowerCase()==='h' && heldRatePrev==null){
+    heldRatePrev = vid.playbackRate;
+    setRate(0.5);
+  }
+});
+document.addEventListener('keyup', e=>{
+  if (e.key.toLowerCase()==='h' && heldRatePrev!=null){
+    setRate(heldRatePrev);
+    heldRatePrev = null;
+  }
+});
+
+// bonus: frame-step when paused (Alt+, / Alt+.)
+document.addEventListener('keydown', e=>{
+  if (e.altKey && e.key === '.' && vid.paused){
+    const fps = +$('fps').value || 60;
+    vid.currentTime = Math.min(vid.duration||1e9, (vid.currentTime||0) + 1/fps);
+    e.preventDefault();
+  }
+  if (e.altKey && e.key === ',' && vid.paused){
+    const fps = +$('fps').value || 60;
+    vid.currentTime = Math.max(0, (vid.currentTime||0) - 1/fps);
+    e.preventDefault();
+  }
+});
+
 </script>
 </body>
 </html>

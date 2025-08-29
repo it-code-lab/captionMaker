@@ -6,7 +6,7 @@
 <title>Hindi Caption Maker (.ass) — with Effect Preview</title>
 <style>
   :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb }
-  *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Inter,"Noto Sans Devanagari",sans-serif}
+  *{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Inter,"Rozha One Regular",sans-serif}
   body{margin:0;background:var(--bg);color:var(--text)}
   header{padding:12px 16px;border-bottom:1px solid #1f2937;font-weight:600}
   .wrap{display:grid;grid-template-columns:380px 1fr;height:calc(100vh - 52px)}
@@ -49,11 +49,11 @@
       <div class="row">
         <div>
           <label>Font family</label>
-          <input id="fontFamily" value="Noto Sans Devanagari">
+          <input id="fontFamily" value="Rozha One Regular">
         </div>
         <div>
           <label>Font size</label>
-          <input id="fontSize" type="number" value="64" min="8">
+          <input id="fontSize" type="number" value="80" min="8">
         </div>
       </div>
 
@@ -75,7 +75,7 @@
         </div>
         <div>
           <label>Outline thickness</label>
-          <input id="outline" type="number" value="4" min="0" step="1">
+          <input id="outline" type="number" value="0" min="0" step="1">
         </div>
       </div>
 
@@ -99,12 +99,12 @@
         <div>
           <label>Position preset</label>
           <select id="align">
-            <option value="2" selected>Center Bottom (2)</option>
+            <option value="2">Center Bottom (2)</option>
             <option value="8">Center Top (8)</option>
             <option value="5">Center Middle (5)</option>
             <option value="1">Left Bottom (1)</option>
             <option value="3">Right Bottom (3)</option>
-            <option value="4">Left Middle (4)</option>
+            <option value="4" selected>Left Middle (4)</option>
             <option value="6">Right Middle (6)</option>
             <option value="7">Left Top (7)</option>
             <option value="9">Right Top (9)</option>
@@ -131,8 +131,8 @@
         <div>
           <label>Reveal effect</label>
           <select id="effect">
-            <option value="none" selected>None</option>
-            <option value="fade">Fade (250ms in / 150ms out)</option>
+            <option value="none">None</option>
+            <option value="fade" selected>Fade (250ms in / 150ms out)</option>
             <option value="slideup">Slide Up (600ms)</option>
             <option value="glow">Soft Glow (600ms)</option>
             <option value="karaoke">Karaoke (line duration)</option>
@@ -332,16 +332,16 @@ function exportASS(){
     const PlayResY = +$('resY').value || 1080;
     const WrapStyle = +$('wrapStyle').value || 2;
 
-    const font = $('fontFamily').value || 'Noto Sans Devanagari';
-    const fontsize = +$('fontSize').value || 64;
+    const font = $('fontFamily').value || 'Rozha One Regular';
+    const fontsize = +$('fontSize').value || 80;
 
     const pri  = cssHexToASS($('colorText').value, $('alphaText').value || 0);
     const out  = cssHexToASS($('colorOutline').value, 0);
     const back = '&H64000000';
     const sec  = '&H000000FF';
 
-    const outlinePx = +$('outline').value || 4;
-    const shadowPx  = +$('shadow').value  || 3;
+    const outlinePx = +$('outline').value || 0;
+    const shadowPx  = +$('shadow').value  || 5;
 
     const alignVal = +$('align').value || 2;
     const mL = +$('marginL').value || 80;
@@ -398,7 +398,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 ; Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},-1,0,0,0,100,100,0,0,1,${outlinePx},${shadowPx},${alignVal},${mL},${mR},${mV},1
+Style: HindiStyle,${font},${fontsize},${pri},${sec},${out},${back},1,0,0,0,100,100,0,0,1,${outlinePx},${shadowPx},${alignVal},${mL},${mR},${mV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
